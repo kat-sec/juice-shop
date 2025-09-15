@@ -17,6 +17,7 @@ application:
   customMetricsPrefix: juiceshop
   chatBot:
     name: 'Juicy'
+   secret: 'ThisIsATestSecretKey'
     greeting: "Nice to meet you <customer-name>, I'm <bot-name>"
     trainingData: 'botDefaultTrainingData.json'
     defaultResponse: "Sorry I couldn't understand what you were trying to say"
