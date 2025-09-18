@@ -58,41 +58,53 @@ pipeline {
                 }
             }
         }
-
-        // Stage 4: Run automated tests
-        stage('Run Tests') {
-            steps {
-                dir(WORKSPACE_DIR) {
-                    script {
-                        echo "Running automated tests..."
-                        def exitCode = 0
-                        try {
-                            exitCode = bat(script: "${NPM_EXE} test", returnStatus: true)
-                        } catch (Exception e) {
-                            echo "Test execution error: ${e.message}"
-                            exitCode = 1
-                        }
-
-                        if (exitCode != 0) {
-                            echo "Some tests failed"
-                            currentBuild.result = 'UNSTABLE'
-                        } else {
-                            echo "All tests passed"
-                        }
-
-                        try {
-                            if (fileExists('test-results')) {
-                                archiveArtifacts 'test-results/*.xml'
-                            } else {
-                                echo "No test-results folder found"
-                            }
-                        } catch (Exception e) {
-                            echo "Artifact archiving failed: ${e.message}"
-                        }
-                    }
+    // Create Test Results Folder
+stage('Prepare Test Results Folder') {
+    steps {
+        dir(WORKSPACE_DIR) {
+            script {
+                if (!fileExists('test-results')) {
+                    echo "Creating test-results folder..."
+                    bat "mkdir test-results"
+                } else {
+                    echo "test-results folder already exists"
                 }
             }
         }
+    }
+}
+
+// Stage 4: Run automated tests
+stage('Run Tests') {
+    steps {
+        dir(WORKSPACE_DIR) {
+            script {
+                echo "Running automated tests with JUnit reporter..."
+
+                // Run tests and generate XML for Jenkins
+                def exitCode = bat(
+                    script: "${NPM_EXE} test -- --reporter mocha-junit-reporter --reporter-options mochaFile=test-results/results.xml",
+                    returnStatus: true
+                )
+
+                if (exitCode != 0) {
+                    echo "Some tests failed"
+                    currentBuild.result = 'UNSTABLE'
+                } else {
+                    echo "ll tests passed"
+                }
+
+                // Archive XML artifacts
+                if (fileExists('test-results/results.xml')) {
+                    archiveArtifacts 'test-results/*.xml'
+                } else {
+                    echo "No XML results found, skipping archive."
+                }
+            }
+        }
+    }
+}
+
 
         // Stage 5: Linting and security audit
         stage('Code Quality Analysis') {
@@ -151,7 +163,7 @@ pipeline {
             }
         }
 
-        // Stage 7: Build placeholder (Juice Shop doesn't require a build step)
+        // Stage 7: Build placeholder since Juice Shop doesn't require a build step
         stage('Build') {
             steps {
                 dir(WORKSPACE_DIR) {
@@ -242,16 +254,28 @@ pipeline {
             }
         }
 
-        // Stage 12: Monitoring simulation (placeholder for observability tools)
-        stage('Monitoring') {
-            steps {
-                script {
-                    echo "Simulating monitoring setup..."
-                    echo "In a real-world scenario, this would integrate tools like New Relic, Prometheus, or Datadog."
-                    echo "Metrics such as container uptime, response latency, and error rates would be tracked."
-                }
+// Stage 12: Monitoring 
+stage('Monitoring') {
+    steps {
+        script {
+            echo "Collecting Docker container metrics for Juice Shop..."
+
+            try {
+                // Capture container stats once (no streaming)
+                def stats = bat(
+                    script: "docker stats ${DOCKER_IMAGE}-test --no-stream --format \"table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\"",
+                    returnStdout: true
+                ).trim()
+
+                echo "Container Metrics:\n${stats}"
+
+            } catch (Exception e) {
+                echo "Monitoring failed: ${e.message}"
+                currentBuild.result = 'UNSTABLE'
             }
         }
+    }
+}
 
         // Stage 13: Vulnerability Summary
         stage('Vulnerability Summary') {
@@ -288,13 +312,11 @@ pipeline {
 
         success {
             echo 'SUCCESS: Pipeline completed'
-            echo 'Application ready: http://localhost:3000'
         }
 
         unstable {
             echo 'UNSTABLE: Pipeline completed with warnings'
             echo 'Juice Shop test failures or vulnerabilities are expected'
-            echo 'Application is still functional: http://localhost:3000'
         }
 
         failure {
