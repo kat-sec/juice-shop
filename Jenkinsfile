@@ -319,7 +319,7 @@ stage('Production Monitoring Simulation') {
     }
 }
 
-        // Stage 13: Vulnerability Summary
+        // Stage 14: Vulnerability Summary
         stage('Vulnerability Summary') {
             steps {
                 script {
