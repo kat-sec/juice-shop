@@ -324,3 +324,5 @@ stage('Monitoring') {
         }
     }
 }
+
+// For academic demonstration purposes, these stages show the complete automation workflow and integration points. In a commercial environment, the tagged Docker image would be deployed to AWS ECS, and Datadog would provide real-time monitoring with alerts routed to the operations team.
