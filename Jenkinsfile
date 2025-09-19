@@ -254,7 +254,26 @@ stage('Run Tests') {
             }
         }
 
-// Stage 12: Monitoring 
+// STAGE 12: Simulate Production Deployment
+stage('Production Deployment Simulation') {
+    steps {
+        script {
+            echo "Simulating production deployment using AWS CodeDeploy/Octopus Deploy..."
+            echo "In a real environment, this would:"
+            echo "1. Deploy to production AWS/Azure environment"
+            echo "2. Use blue-green deployment strategy"
+            echo "3. Perform health checks and validation"
+            echo "4. Update production load balancers"
+            
+            // Simulate the deployment command that would be used
+            bat """
+                echo "Simulating: aws deploy create-deployment --application-name JuiceShopApp --deployment-group-name Production --revision-type S3 --s3-location bucket=my-app-bucket,key=juice-shop-${env.BUILD_NUMBER}.zip,bundleType=zip"
+                echo "Simulating: octopus deploy release create --project JuiceShop --version ${env.BUILD_NUMBER} --deployTo Production"
+            """
+        }
+    }
+}
+// Stage 13: Monitoring 
 stage('Monitoring') {
     steps {
         script {
@@ -273,6 +292,29 @@ stage('Monitoring') {
                 echo "Monitoring failed: ${e.message}"
                 currentBuild.result = 'UNSTABLE'
             }
+        }
+    }
+}
+// Production Monitoring Simulation
+stage('Production Monitoring Simulation') {
+    steps {
+        script {
+            echo "Simulating production monitoring with Datadog/New Relic..."
+            echo "Monitoring would track:"
+            echo "- Application performance (response times, error rates)"
+            echo "- Infrastructure health (CPU, memory, disk usage)"
+            echo "- Business metrics (user activity, transactions)"
+            echo "- Security events (failed logins, suspicious activity)"
+            
+            // Simulate connecting to monitoring tools
+            bat """
+                echo "Simulating: datadog-monitor config --app JuiceShop --metrics cpu,memory,response_time"
+                echo "Simulating: newrelic deployment create --appId JUICESHOP --revision ${env.BUILD_NUMBER}"
+                echo "Simulating: alerts would be sent to Slack/Email/PagerDuty"
+            """
+            
+            // Monitor something real using test container
+            bat "docker stats ${DOCKER_IMAGE}-test --no-stream || echo 'Monitoring completed'"
         }
     }
 }
@@ -323,6 +365,5 @@ stage('Monitoring') {
             echo 'FAILURE: Pipeline failed on critical error'
         }
     }
-}
-
-// For academic demonstration purposes, these stages show the complete automation workflow and integration points. In a commercial environment, the tagged Docker image would be deployed to AWS ECS, and Datadog would provide real-time monitoring with alerts routed to the operations team.
+    // For academic demonstration purposes, these stages show the complete automation workflow and integration points. In a commercial environment, the tagged Docker image would be deployed to AWS ECS, and Datadog would provide real-time monitoring with alerts routed to the operations team, 
+    the complete automation workflow and integration points. In a commercial environment, the tagged Docker image would be deployed to AWS ECS, and Datadog would provide real-time monitoring with alerts routed to the operations team.
